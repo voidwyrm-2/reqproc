@@ -17,6 +17,10 @@ func New(parentScope *scope.Scope) Interpreter {
 	return Interpreter{scope: parentScope, stack: stack.New(), err: ""}
 }
 
+func (i Interpreter) GetScope() *scope.Scope {
+	return i.scope
+}
+
 func (i *Interpreter) ExecuteTokens(toks tokens.Token) ([]types.ReqType, error) {
 	return []types.ReqType{}, nil
 }
