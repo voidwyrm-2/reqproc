@@ -1,0 +1,30 @@
+; initial version, this syntax is subject to change
+
+"io" import
+; alias putl io.putl
+; alias exit io.exit
+; aliases may not be added
+
+"https://voidwyrm-2.github.io" &req
+iferr error
+
+$dom
+@dom
+
+`<meta property="og(:[a-z_]*)+" content="(.)">` &match ; returns a list of lists of strings
+iferr error
+
+(@[2]) &apply ; parentheses declare an anonymous function, use $f to assign it to a constant variable then &f to run it
+
+$contents
+@contents &IO.putl
+
+
+:error
+ &geterr ; get the error message
+
+ &errcl ; clear the error message (not required since we're immediately exiting, but still good practice)
+
+ &io.putl ; print the message
+
+ 1 &io.exit
