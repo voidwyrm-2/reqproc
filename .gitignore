@@ -1,0 +1,13 @@
+commit.sh
+build/
+test/build/
+compile/
+dist/
+.DS_Store
+.vscode
+__pycache__
+bin/
+obj/
+
+build.sh
+_type_test.go
