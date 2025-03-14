@@ -1,40 +1,51 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io"
+	"os"
 
-	"github.com/voidwyrm-2/reqproc/runtime/types/functiontype"
-	"github.com/voidwyrm-2/reqproc/runtime/types/listtype"
-	"github.com/voidwyrm-2/reqproc/runtime/types/numbertype"
-	"github.com/voidwyrm-2/reqproc/runtime/types/stringtype"
+	"github.com/voidwyrm-2/reqproc/lexer"
+	"github.com/voidwyrm-2/reqproc/runtime/interpreter"
+	"github.com/voidwyrm-2/reqproc/runtime/scope"
 )
 
-func main() {
-	f := functiontype.NewNative(func(str string, f func()) {})
-	fmt.Println(f)
-
-	str := stringtype.New("hello")
-	fmt.Println(str)
-
-	str2 := stringtype.New(" there")
-	fmt.Println(str2)
-
-	str3, _ := str.Add(str2)
-	fmt.Println(str3)
-
-	if _, err := str.Sub(str2); err != nil {
-		fmt.Println(err.Error())
+func _main() error {
+	if len(os.Args) < 2 {
+		return errors.New("expected 'reqproc <file>'")
 	}
 
-	ls := listtype.New(stringtype.New("hello"), stringtype.New("there"), stringtype.New("good"), stringtype.New("sir"))
-	fmt.Println(ls)
+	file, err := os.Open(os.Args[1])
+	defer file.Close()
+	if err != nil {
+		return err
+	}
 
-	als, _ := ls.Add(stringtype.New(" wow!"))
-	fmt.Println(als)
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return err
+	}
 
-	ls2 := listtype.New(numbertype.New(10), numbertype.New(20), numbertype.New(30), numbertype.New(40), numbertype.New(50))
-	fmt.Println(ls2)
+	l := lexer.New(string(content))
 
-	mls, _ := ls2.Mul(numbertype.New(3))
-	fmt.Println(mls)
+	tokens, err := l.Lex()
+	if err != nil {
+		return err
+	}
+
+	interp := interpreter.New(scope.New(nil))
+
+	leftover, err := interp.ExecuteTokens(tokens)
+
+	fmt.Println(leftover)
+
+	return err
+}
+
+func main() {
+	if err := _main(); err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
 }

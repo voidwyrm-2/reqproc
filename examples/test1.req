@@ -1,0 +1,4 @@
+10 3.3 true false "hello"
+def v
+!v
+@v @v

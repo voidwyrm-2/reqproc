@@ -2,15 +2,47 @@ package types
 
 import "fmt"
 
+type ReqVarType int8
+
 const (
-	TypeString   = "string"
-	TypeNumber   = "number"
-	TypeList     = "list"
-	TypeFunction = "function"
+	TypeBase              = -1
+	TypeString ReqVarType = (iota + 1) << 1
+	TypeNumber
+	TypeList
+	TypeTable
+	TypeFunction
 )
 
+const TypeAny = TypeString | TypeNumber | TypeList | TypeTable | TypeFunction
+
+func (rvt ReqVarType) String() string {
+	switch rvt {
+	case TypeAny:
+		return "any"
+	case TypeString:
+		return "string"
+	case TypeNumber:
+		return "number"
+	case TypeList:
+		return "list"
+	case TypeTable:
+		return "table"
+	case TypeFunction:
+		return "function"
+	default:
+		panic(fmt.Sprintf("invalid ReqVarType %d", rvt))
+	}
+}
+
+var IllegalVariableNames = []string{
+	"true",
+	"false",
+	"import",
+	"def",
+}
+
 type ReqType interface {
-	Type() string
+	Type() ReqVarType
 	String() string
 	Literal() any
 	Add(other ReqType) (ReqType, error)

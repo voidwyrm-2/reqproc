@@ -17,7 +17,7 @@ iferr error
 (@[2]) &apply ; parentheses declare an anonymous function, use $f to assign it to a constant variable then &f to run it
 
 $contents
-@contents &IO.putl
+@contents &io.putl
 
 
 :error

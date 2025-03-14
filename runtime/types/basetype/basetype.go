@@ -5,14 +5,14 @@ import (
 )
 
 type ReqBaseType struct {
-	kind string
+	kind ReqVarType
 }
 
-func New(kind string) ReqBaseType {
+func New(kind ReqVarType) ReqBaseType {
 	return ReqBaseType{kind: kind}
 }
 
-func (rbt ReqBaseType) Type() string {
+func (rbt ReqBaseType) Type() ReqVarType {
 	return rbt.kind
 }
 
