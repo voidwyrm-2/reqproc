@@ -3,6 +3,7 @@ package scope
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/voidwyrm-2/reqproc/runtime/types"
 )
@@ -26,6 +27,17 @@ func (sc Scope) Consts() map[string]types.ReqType {
 }
 
 func (sc Scope) Read(name string) (types.ReqType, error) {
+	if strings.Contains(name, ".") {
+		path := strings.Split(name, ".")
+
+		v, err := sc.Read(path[0])
+		if err != nil {
+			return nil, err
+		}
+
+		return sc.nestedRead(path[1:], v)
+	}
+
 	if v, ok := sc.vars[name]; ok {
 		if v == nil {
 			return nil, fmt.Errorf("variable '%s' has not had a value assigned to it yet", name)
@@ -36,7 +48,32 @@ func (sc Scope) Read(name string) (types.ReqType, error) {
 		return v, nil
 	}
 
+	if sc.parent != nil {
+		return sc.parent.Read(name)
+	}
+
 	return nil, fmt.Errorf("variable/constant '%s' does not exist", name)
+}
+
+func (sc Scope) nestedRead(path []string, tbl types.ReqType) (types.ReqType, error) {
+	if path[0] == "" {
+		return nil, fmt.Errorf("the dot indexed path cannot be empty")
+	} else if tbl.Type() != types.TypeTable {
+		return nil, fmt.Errorf("'%s' is not a dot indexable type", tbl.Type().String())
+	}
+
+	m := tbl.Literal().(map[string]types.ReqType)
+
+	v, ok := m[path[0]]
+	if !ok {
+		return nil, fmt.Errorf("key '%s' does not exist", path[0])
+	}
+
+	if len(path) == 1 {
+		return v, nil
+	}
+
+	return sc.nestedRead(path[1:], v)
 }
 
 func (sc *Scope) Write(name string, value types.ReqType) error {

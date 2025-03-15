@@ -19,7 +19,7 @@ type ReqNumberType struct {
 }
 
 func New(value float32) ReqNumberType {
-	return ReqNumberType{value: value, ReqBaseType: basetype.New(types.TypeString)}
+	return ReqNumberType{value: value, ReqBaseType: basetype.New(types.TypeNumber)}
 }
 
 func (rst ReqNumberType) String() string {

@@ -2,18 +2,24 @@ package functiontype
 
 import (
 	"fmt"
-	"reflect"
-	"strings"
 
+	"github.com/voidwyrm-2/reqproc/lexer/tokens"
+	"github.com/voidwyrm-2/reqproc/runtime/scope"
+	"github.com/voidwyrm-2/reqproc/runtime/stack"
 	"github.com/voidwyrm-2/reqproc/runtime/types"
 	"github.com/voidwyrm-2/reqproc/runtime/types/basetype"
 )
 
 type ReqFunctionType struct {
 	basetype.ReqBaseType
-	value reflect.Value
-	args  []string
+	// value reflect.Value
+	// args  []types.ReqVarType
+	native    func(sc *scope.Scope, st *stack.Stack) error
+	tokens    []tokens.Token
+	args, ret int
 }
+
+/*
 
 func tokenizeSigniture(sig string) []string {
 	tokens := []string{""}
@@ -40,8 +46,8 @@ func tokenizeSigniture(sig string) []string {
 	return tokens
 }
 
-func parseFuncParams(fn reflect.Type) []string {
-	parsed := []string{}
+func parseFuncParams(fn reflect.Type) []types.ReqVarType {
+	parsed := []types.ReqVarType{}
 
 	tokens := tokenizeSigniture(fn.String())
 
@@ -73,11 +79,49 @@ func NewNative(fn any) ReqFunctionType {
 
 	return ReqFunctionType{value: value, args: parseFuncParams(value.Type()), ReqBaseType: basetype.New(types.TypeFunction)}
 }
+*/
 
-func (rft ReqFunctionType) Literal() any {
-	return rft.value
+func NewNative(args, ret int, fn func(sc *scope.Scope, st *stack.Stack) error) ReqFunctionType {
+	return ReqFunctionType{native: fn, args: args, ret: ret, ReqBaseType: basetype.New(types.TypeFunction)}
 }
 
+func New(tokens []tokens.Token) ReqFunctionType {
+	f := ReqFunctionType{tokens: tokens, ReqBaseType: basetype.New(types.TypeFunction)}
+	f.parseForArgs()
+	return f
+}
+
+func (rft ReqFunctionType) Args() int {
+	return rft.args
+}
+
+func (rft ReqFunctionType) Ret() int {
+	return rft.ret
+}
+
+func (rft *ReqFunctionType) parseForArgs() {
+}
+
+func (rft ReqFunctionType) Literal() any {
+	if rft.native == nil {
+		return rft.tokens
+	}
+
+	return rft.native
+}
+
+/*
 func (rft ReqFunctionType) String() string {
-	return "function{" + strings.Join(rft.args, ", ") + "}"
+	formatted := []string{}
+
+	for _, a := range rft.args {
+		formatted = append(formatted, a.String())
+	}
+
+	return "function{" + strings.Join(formatted, ", ") + "}"
+}
+*/
+
+func (rft ReqFunctionType) String() string {
+	return fmt.Sprintf("function{%d}", rft.args)
 }

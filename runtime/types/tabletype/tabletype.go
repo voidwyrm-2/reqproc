@@ -8,23 +8,23 @@ import (
 	"github.com/voidwyrm-2/reqproc/runtime/types/basetype"
 )
 
-type TableType struct {
+type ReqTableType struct {
 	basetype.ReqBaseType
 	value map[string]types.ReqType
 }
 
-func New(value map[string]types.ReqType) TableType {
-	return TableType{value: value, ReqBaseType: basetype.New(types.TypeTable)}
+func New(value map[string]types.ReqType) ReqTableType {
+	return ReqTableType{value: value, ReqBaseType: basetype.New(types.TypeTable)}
 }
 
-func (tbt TableType) String() string {
+func (tbt ReqTableType) String() string {
 	return fmt.Sprint(tbt.value)
 }
 
-func (tbt TableType) Literal() any {
+func (tbt ReqTableType) Literal() any {
 	return tbt.value
 }
 
-func (tbt TableType) Length() (int, error) {
+func (tbt ReqTableType) Length() (int, error) {
 	return len(tbt.value), nil
 }

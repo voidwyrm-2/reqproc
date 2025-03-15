@@ -5,12 +5,12 @@ import "fmt"
 type ReqVarType int8
 
 const (
-	TypeBase              = -1
-	TypeString ReqVarType = (iota + 1) << 1
-	TypeNumber
-	TypeList
-	TypeTable
-	TypeFunction
+	TypeBase                = -1
+	TypeString   ReqVarType = 0b1
+	TypeNumber   ReqVarType = 0b10
+	TypeList     ReqVarType = 0b100
+	TypeTable    ReqVarType = 0b1000
+	TypeFunction ReqVarType = 0b10000
 )
 
 const TypeAny = TypeString | TypeNumber | TypeList | TypeTable | TypeFunction

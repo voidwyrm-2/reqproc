@@ -1,4 +1,11 @@
+"io" import
+"os" import
+
 10 3.3 true false "hello"
 def v
 !v
 @v @v
+&io.putl
+
+:lab
+0 &os.exit

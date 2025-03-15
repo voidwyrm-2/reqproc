@@ -205,6 +205,8 @@ func (l *Lexer) Lex() ([]tokens.Token, error) {
 			} else {
 				toks = append(toks, l.collectIdent(tokens.GetValue, true))
 			}
+		case ':':
+			toks = append(toks, l.collectIdent(tokens.Label, true))
 		case '"':
 			{
 				t, err := l.collectString(false)

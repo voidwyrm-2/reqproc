@@ -1,0 +1,16 @@
+"io" import
+"web" import
+
+"https://voidwyrm-2.github.io" &web.download
+err error
+
+0 &io.exit
+
+:error
+ geterr
+
+ errcl
+
+ &io.putl
+
+ 1 &os.exit
