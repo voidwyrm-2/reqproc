@@ -7,7 +7,18 @@ import (
 )
 
 func isIdent(ch rune) bool {
-	return !unicode.IsSpace(ch) && ch < 256 && ch != '!' && ch != '$' && ch != '@' && ch != '&' && ch != '(' && ch != ')' && ch != '[' && ch != ']'
+	return !unicode.IsSpace(ch) && ch < 256 && ch != '!' && ch != '$' && ch != '@' && ch != '(' && ch != ')' && ch != '[' && ch != ']'
+}
+
+func isNumber(ch rune) bool {
+	return ch >= '0' && ch <= '9'
+}
+
+var charTokenMap = map[rune]tokens.TokenKind{
+	'(': tokens.ParenOpen,
+	')': tokens.ParenClose,
+	'[': tokens.BracketOpen,
+	']': tokens.BracketClose,
 }
 
 type Lexer struct {
@@ -59,7 +70,7 @@ func (l Lexer) illch() error {
 }
 
 func (l Lexer) isNumber() bool {
-	return l.ch >= '0' && l.ch <= '9'
+	return isNumber(l.ch)
 }
 
 func (l Lexer) isIdent() bool {
@@ -118,11 +129,19 @@ func (l *Lexer) collectString(raw bool) (tokens.Token, error) {
 	return tokens.New(tokens.String, lit, start, startln), nil
 }
 
-func (l *Lexer) collectNumber() tokens.Token {
+func (l *Lexer) collectNumber(signature, negative bool) tokens.Token {
 	start := l.col
 	startln := l.ln
 	lit := ""
 	dot := false
+
+	if signature {
+		l.advance()
+	}
+
+	if negative {
+		l.advance()
+	}
 
 	for l.ch != -1 && (l.isNumber() || l.ch == '.') {
 		if l.ch == '.' {
@@ -135,6 +154,14 @@ func (l *Lexer) collectNumber() tokens.Token {
 
 		lit += string(l.ch)
 		l.advance()
+	}
+
+	if negative {
+		lit = "-" + lit
+	}
+
+	if signature {
+		return tokens.New(tokens.Signature, lit, start, startln)
 	}
 
 	return tokens.New(tokens.Number, lit, start, startln)
@@ -166,20 +193,6 @@ func (l *Lexer) Lex() ([]tokens.Token, error) {
 			for l.ch != -1 && l.ch != '\n' {
 				l.advance()
 			}
-		case '(':
-			toks = append(toks, tokens.New(tokens.ParenOpen, string(l.ch), l.col, l.ln))
-			l.advance()
-		case ')':
-			toks = append(toks, tokens.New(tokens.ParenClose, string(l.ch), l.col, l.ln))
-			l.advance()
-		case ']':
-			toks = append(toks, tokens.New(tokens.BracketClose, string(l.ch), l.col, l.ln))
-			l.advance()
-		case '&':
-			if !isIdent(l.peek()) {
-				return []tokens.Token{}, l.illch()
-			}
-			toks = append(toks, l.collectIdent(tokens.Call, true))
 		case '!':
 			if l.peek() == '[' {
 				toks = append(toks, tokens.New(tokens.AssignIndex, string(l.ch)+"[", l.col, l.ln))
@@ -225,9 +238,18 @@ func (l *Lexer) Lex() ([]tokens.Token, error) {
 
 				toks = append(toks, t)
 			}
+		case '|':
+			{
+				toks = append(toks, l.collectNumber(true, l.peek() == '-'))
+			}
 		default:
-			if l.isNumber() {
-				toks = append(toks, l.collectNumber())
+			if kind, ok := charTokenMap[l.ch]; ok {
+				toks = append(toks, tokens.New(kind, string(l.ch), l.col, l.ln))
+				l.advance()
+			} else if l.isNumber() {
+				toks = append(toks, l.collectNumber(false, false))
+			} else if l.ch == '-' && isNumber(l.peek()) {
+				toks = append(toks, l.collectNumber(false, true))
 			} else if l.isIdent() {
 				toks = append(toks, l.collectIdent(tokens.Ident, false))
 			} else if unicode.IsSpace(l.ch) {

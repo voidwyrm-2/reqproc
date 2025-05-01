@@ -1,44 +1,63 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type ReqVarType int8
 
 const (
-	TypeBase                = -1
-	TypeString   ReqVarType = 0b1
-	TypeNumber   ReqVarType = 0b10
-	TypeList     ReqVarType = 0b100
-	TypeTable    ReqVarType = 0b1000
-	TypeFunction ReqVarType = 0b10000
+	TypeBase              = -1
+	TypeString ReqVarType = 1 << (iota - 1)
+	TypeNumber
+	TypeList
+	TypeTable
+	TypeFunction
+	TypeNative
 )
 
-const TypeAny = TypeString | TypeNumber | TypeList | TypeTable | TypeFunction
+const TypeAny = TypeString | TypeNumber | TypeList | TypeTable | TypeFunction | TypeNative
 
-func (rvt ReqVarType) String() string {
-	switch rvt {
-	case TypeAny:
-		return "any"
-	case TypeString:
-		return "string"
-	case TypeNumber:
-		return "number"
-	case TypeList:
-		return "list"
-	case TypeTable:
-		return "table"
-	case TypeFunction:
-		return "function"
-	default:
-		panic(fmt.Sprintf("invalid ReqVarType %d", rvt))
+var typeNameMapFrom, typeNameMapInto = func() (map[ReqVarType]string, map[string]ReqVarType) {
+	a := map[ReqVarType]string{
+		TypeAny:      "any",
+		TypeString:   "string",
+		TypeNumber:   "number",
+		TypeList:     "list",
+		TypeTable:    "table",
+		TypeFunction: "function",
+		TypeNative:   "native",
 	}
+
+	b := map[string]ReqVarType{}
+	for k, v := range a {
+		b[v] = k
+	}
+
+	return a, b
+}()
+
+func TypeFromString(s string) (ReqVarType, error) {
+	if v, ok := typeNameMapInto[s]; ok {
+		return v, nil
+	}
+
+	return TypeBase, fmt.Errorf("'%s' is not a valid ReqVarType", s)
 }
 
-var IllegalVariableNames = []string{
-	"true",
-	"false",
-	"import",
-	"def",
+func (rvt ReqVarType) String() string {
+	if v, ok := typeNameMapFrom[rvt]; ok {
+		return v
+	}
+
+	panic(fmt.Sprintf("invalid ReqVarType %d", rvt))
+}
+
+var IllegalVariableNames = map[string]struct{}{
+	"true":   {},
+	"false":  {},
+	"import": {},
+	"def":    {},
 }
 
 type ReqType interface {

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 
 	"github.com/voidwyrm-2/reqproc/lexer"
 	"github.com/voidwyrm-2/reqproc/lexer/tokens"
@@ -18,14 +19,43 @@ import (
 	"github.com/voidwyrm-2/reqproc/runtime/types/tabletype"
 )
 
-func CallFunctionType(rft functiontype.ReqFunctionType, sc *scope.Scope, st *stack.Stack) error {
-	lit := rft.Literal()
-
-	if fn, ok := lit.(func(sc *scope.Scope, st *stack.Stack) error); ok {
-		return fn(sc, st)
+func expectKindsForwardInTokens(it int, toks []tokens.Token, kinds ...tokens.TokenKind) error {
+	if len(kinds) == 0 {
+		return nil
+	} else if it+1 >= len(toks) {
+		return toks[it].Errf("expected '%s', but found EOF", kinds[0].PublicString())
 	}
 
-	interp := New(sc)
+	for i, k := range kinds {
+		if !toks[it+i+1].Iskind(k) {
+			return toks[it+i+1].Errf("expected '%s', but found '%s' instead", kinds[0].PublicString(), toks[it+i+1].Lit())
+		}
+	}
+
+	return nil
+}
+
+func CallFunctionType(rft functiontype.ReqFunctionType, sc *scope.Scope, st *stack.Stack, sameStack bool) error {
+	if err := st.Expect(rft.Input()...); err != nil {
+		return err
+	}
+
+	lit := rft.Literal()
+
+	if fn, ok := lit.(functiontype.NativeFunction); ok {
+		return fn(sc, st, func(rft functiontype.ReqFunctionType, sc *scope.Scope, st *stack.Stack) error {
+			return CallFunctionType(rft, sc, st, true)
+		})
+	}
+
+	interp, err := New(sc)
+	if err != nil {
+		return err
+	}
+
+	if sameStack {
+		interp.stack = st
+	}
 
 	res, err := interp.ExecuteTokens(lit.([]tokens.Token))
 	st.Push(res...)
@@ -34,17 +64,62 @@ func CallFunctionType(rft functiontype.ReqFunctionType, sc *scope.Scope, st *sta
 }
 
 type Interpreter struct {
-	scope *scope.Scope
-	stack stack.Stack
-	err   string
+	scope   *scope.Scope
+	stack   *stack.Stack
+	modeTry bool
+	err     string
 }
 
-func New(parentScope *scope.Scope) Interpreter {
-	return Interpreter{scope: parentScope, stack: stack.New(), err: ""}
+func New(parentScope *scope.Scope) (Interpreter, error) {
+	st := stack.New()
+	i := Interpreter{scope: scope.New(parentScope, map[string]types.ReqType{}), stack: &st, err: "", modeTry: false}
+
+	err := i.scope.LoadAllConst(stdlib.Stdlib["__init__"])
+	if err != nil {
+		return Interpreter{}, err
+	}
+
+	return i, nil
 }
 
 func (i Interpreter) GetScope() *scope.Scope {
 	return i.scope
+}
+
+func (i Interpreter) GetStack() stack.Stack {
+	return *i.stack
+}
+
+func (i *Interpreter) StackPush(values ...types.ReqType) {
+	i.stack.Push(values...)
+}
+
+func (i *Interpreter) StackPop() (types.ReqType, bool) {
+	if i.stack.Len() == 0 {
+		return nil, false
+	}
+
+	return i.stack.Pop(), true
+}
+
+func (i Interpreter) StackLen() int {
+	return i.stack.Len()
+}
+
+func (i Interpreter) GetErr() string {
+	return i.err
+}
+
+func (i *Interpreter) SetErr(e string) {
+	i.err = e
+}
+
+func (i Interpreter) GetModeTry() bool {
+	return i.modeTry
+}
+
+func (i *Interpreter) SetModeTry(m bool) {
+	i.modeTry = m
 }
 
 func (i *Interpreter) ExecuteTokens(toks []tokens.Token) ([]types.ReqType, error) {
@@ -70,19 +145,28 @@ func (i *Interpreter) ExecuteTokens(toks []tokens.Token) ([]types.ReqType, error
 		}
 
 		expectKindsForward := func(kinds ...tokens.TokenKind) error {
-			if len(kinds) == 0 {
-				return nil
-			} else if it+1 >= len(toks) {
-				return toks[it].Errf("expected '%s', but found EOF", kinds[0].PublicString())
-			}
+			return expectKindsForwardInTokens(it, toks, kinds...)
+		}
 
-			for i, k := range kinds {
-				if !toks[it+i+1].Iskind(k) {
-					return toks[it].Errf("expected '%s', but found '%s' instead", kinds[0].PublicString(), toks[it+i+1].Lit())
+		collectInPairForward := func(anchor tokens.Token, a, b tokens.TokenKind) ([]tokens.Token, error) {
+			contained := []tokens.Token{}
+
+			nest := 0
+			for _, t := range toks[it+1:] {
+				if t.Iskind(a) {
+					nest++
+				} else if t.Iskind(b) {
+					if nest > 0 {
+						nest--
+					} else {
+						return contained, nil
+					}
 				}
+
+				contained = append(contained, t)
 			}
 
-			return nil
+			return contained, anchor.Errf("no '%s' to match '%s'", b.String(), a.String())
 		}
 
 		switch cur.Kind() {
@@ -99,7 +183,7 @@ func (i *Interpreter) ExecuteTokens(toks []tokens.Token) ([]types.ReqType, error
 			}
 			it++
 		case tokens.Ident:
-			switch toks[it].Lit() {
+			switch cur.Lit() {
 			case "def":
 				if err := expectKindsForward(tokens.Ident); err != nil {
 					return []types.ReqType{}, cur.Err(err)
@@ -115,7 +199,7 @@ func (i *Interpreter) ExecuteTokens(toks []tokens.Token) ([]types.ReqType, error
 				} else if i.err != "" {
 					it = l
 				} else {
-					it++
+					it += 2
 				}
 			case "geterr":
 				i.stack.Push(stringtype.New(i.err))
@@ -148,7 +232,10 @@ func (i *Interpreter) ExecuteTokens(toks []tokens.Token) ([]types.ReqType, error
 								return err
 							}
 
-							interp := New(nil)
+							interp, err := New(nil)
+							if err != nil {
+								return err
+							}
 
 							_, err = interp.Execute(string(content))
 							if err != nil {
@@ -158,10 +245,14 @@ func (i *Interpreter) ExecuteTokens(toks []tokens.Token) ([]types.ReqType, error
 							return i.scope.WriteConst(modname, tabletype.New(interp.scope.Consts()))
 						}()
 						if err != nil {
-							i.err = cur.Err(err).Error()
+							if i.modeTry {
+								i.err = cur.Err(err).Error()
+							} else {
+								return []types.ReqType{}, err
+							}
 						}
 					} else {
-						if mod, ok := stdlib.Stdlib[modname]; ok {
+						if mod, ok := stdlib.Stdlib[modname]; ok && !strings.HasPrefix(modname, "__") {
 							if err := i.scope.WriteConst(modname, tabletype.New(mod)); err != nil {
 								return []types.ReqType{}, cur.Err(err)
 							}
@@ -171,22 +262,36 @@ func (i *Interpreter) ExecuteTokens(toks []tokens.Token) ([]types.ReqType, error
 					}
 				}
 				it++
+			case "try":
+				i.modeTry = true
+				it++
+			case "notry":
+				i.modeTry = false
+				it++
 			default:
-				return []types.ReqType{}, toks[it].Errf("unexpected identifier '%s'", toks[it].Lit())
-			}
-		case tokens.Call:
-			if v, err := i.scope.Read(cur.Lit()); err != nil {
-				return []types.ReqType{}, cur.Err(err)
-			} else if v.Type() != types.TypeFunction {
-				return []types.ReqType{}, cur.Errf("'%s' is not callable", v.Type().String())
-			} else {
-				if err := CallFunctionType(v.(functiontype.ReqFunctionType), i.scope, &i.stack); err != nil {
-					i.err = cur.Err(err).Error()
+				if v, err := i.scope.Read(cur.Lit()); err != nil { // does that variable or const exist?
+					return []types.ReqType{}, cur.Err(err)
+				} else if v.Type() != types.TypeFunction { // can we call it?
+					return []types.ReqType{}, cur.Errf("'%s' is not callable", v.Type().String())
+				} else { // all good, let's call it
+					if err := CallFunctionType(v.(functiontype.ReqFunctionType), i.scope, i.stack, false); err != nil {
+						if strings.HasPrefix(err.Error(), "EXIT CODE ") { // special handling for the exit function
+							return []types.ReqType{}, err
+						}
+
+						if i.modeTry {
+							i.err = cur.Err(err).Error()
+						} else {
+							return []types.ReqType{}, cur.Err(err)
+						}
+					}
 				}
+				it++
 			}
-			it++
 		case tokens.GetValue:
-			if v, err := i.scope.Read(cur.Lit()); err != nil {
+			if f, ok := stdlib.Stdlib["__keyword__"][cur.Lit()]; ok {
+				i.stack.Push(f)
+			} else if v, err := i.scope.Read(cur.Lit()); err != nil {
 				return []types.ReqType{}, cur.Err(err)
 			} else {
 				i.stack.Push(v)
@@ -206,8 +311,31 @@ func (i *Interpreter) ExecuteTokens(toks []tokens.Token) ([]types.ReqType, error
 				return []types.ReqType{}, cur.Err(err)
 			}
 			it++
+		case tokens.ParenOpen:
+			// collect the tokens until the matching ')'
+			// the function keeps track of how many pairs deep we are
+			if fcontent, err := collectInPairForward(toks[it], tokens.ParenOpen, tokens.ParenClose); err != nil {
+				if i.modeTry {
+					i.err = err.Error()
+				} else {
+					return []types.ReqType{}, err
+				}
+			} else {
+				if err = expectKindsForwardInTokens(-1, fcontent, tokens.Signature); err != nil {
+					return []types.ReqType{}, err
+				}
+
+				sig, err := strconv.ParseFloat(fcontent[0].Lit(), 32)
+				if err != nil {
+					return []types.ReqType{}, cur.Err(err)
+				}
+
+				i.stack.Push(functiontype.New(fcontent[1:], float32(sig)))
+
+				it += len(fcontent) + 2
+			}
 		default:
-			return []types.ReqType{}, toks[it].Errf("unexpected token '%s'", toks[it].Lit())
+			return []types.ReqType{}, cur.Errf("unexpected token '%s'", cur.Lit())
 		}
 	}
 

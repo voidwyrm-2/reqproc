@@ -9,5 +9,7 @@ __pycache__
 bin/
 obj/
 
+makefile
+changes.patch
 build.sh
 _type_test.go

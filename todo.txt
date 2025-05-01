@@ -1,0 +1,6 @@
+Add language version - done
+Overhaul function system - done
+Add nativetype - done
+Anonymous function declarations - done
+List declarations -
+Table declarations -

@@ -1,31 +1,31 @@
-; initial version, this syntax is subject to change
+; this example is not functioning at the moment
 
 "io" import
 "web" import
-; alias putl io.putl
-; alias exit io.exit
-; aliases may not be added
 
-"https://voidwyrm-2.github.io" &web.download
-err error
+try
+ "https://voidwyrm-2.github.io" web.download
+ err error
+notry
 
 $dom
 @dom
 
-`<meta property="og(:[a-z_]*)+" content="(.)">` &match ; returns a list of lists of strings
+`<meta property="og(:[a-z_]*)+" content="(.)">` match ; returns a list of lists of strings
 err error
 
-(@[2]) &apply ; parentheses declare an anonymous function, use $f to assign it to a constant variable then &f to run it
+(|1.1 @[2]) apply ; parentheses declare an anonymous function, use $f to assign it to a constant variable then f to run it
 
 $contents
-@contents &io.putl
+@contents io.putl
 
 
 :error
+ notry
  geterr ; get the error message
 
  errcl ; clear the error message (not required since we're immediately exiting, but still good practice)
 
- &io.putl ; print the message
+ io.putl ; print the message
 
- 1 &io.exit
+ 1 exit

@@ -1,16 +1,15 @@
 "io" import
-"os" import
 
-"test1.req" &io.readf
+"test1.req" io.readf
 err error
 
-&io.putl
+io.putl
 
 :error
  geterr ; get the error message
 
  errcl ; clear the error message (not required since we're immediately exiting, but still good practice)
 
- &io.putl ; print the message
+ io.putl ; print the message
 
- 1 &os.exit
+ 1 exit

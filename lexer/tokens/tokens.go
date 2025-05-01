@@ -10,6 +10,7 @@ const (
 	None TokenKind = iota
 	String
 	Number
+	Signature
 	Ident
 	Label
 	Assign
@@ -17,47 +18,39 @@ const (
 	Const
 	GetValue
 	GetIndex
-	Call
 	ParenOpen
 	ParenClose
+	BracketOpen
 	BracketClose
+	Plus
+	Hyphen
+	Asterisk
+	ForwardSlash
 )
 
+var kindLitMap = map[TokenKind][2]string{
+	None:         {"None", "none"},
+	String:       {"String", "string"},
+	Number:       {"Number", "number"},
+	Ident:        {"Ident", "identifier"},
+	Label:        {"Label", ":"},
+	Assign:       {"Assign", "!"},
+	AssignIndex:  {"AssignIndex", "!["},
+	Const:        {"Const", "$"},
+	GetValue:     {"GetValue", "@"},
+	GetIndex:     {"GetIndex", "@["},
+	ParenOpen:    {"ParenOpen", "("},
+	ParenClose:   {"ParenClose", ")"},
+	BracketClose: {"BracketClose", "]"},
+	Signature:    {"Signature", "|"},
+}
+
 func (tk TokenKind) PublicString() string {
-	return []string{
-		"string",
-		"number",
-		"identifier",
-		":",
-		"!",
-		"![",
-		"$",
-		"@",
-		"@[",
-		"&",
-		"(",
-		")",
-		"]",
-	}[tk]
+	return kindLitMap[tk][1]
 }
 
 func (tk TokenKind) String() string {
-	return []string{
-		"None",
-		"String",
-		"Number",
-		"Ident",
-		"Label",
-		"Assign",
-		"AssignIndex",
-		"Const",
-		"GetValue",
-		"GetIndex",
-		"Call",
-		"ParenOpen",
-		"ParenClose",
-		"BracketClose",
-	}[tk]
+	return kindLitMap[tk][0]
 }
 
 type Token struct {
@@ -70,12 +63,20 @@ func New(kind TokenKind, lit string, col, ln int) Token {
 	return Token{kind: kind, lit: lit, col: col, ln: ln}
 }
 
+func NoPos(kind TokenKind, lit string) Token {
+	return Token{kind: kind, lit: lit}
+}
+
 func (t Token) Iskind(kind TokenKind) bool {
 	return t.kind == kind
 }
 
 func (t Token) Islit(lit string) bool {
 	return t.lit == lit
+}
+
+func (t Token) Is(kind TokenKind, lit string) bool {
+	return t.Iskind(kind) && t.Islit(lit)
 }
 
 func (t Token) Kind() TokenKind {

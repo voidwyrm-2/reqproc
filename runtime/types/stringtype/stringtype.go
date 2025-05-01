@@ -2,6 +2,7 @@ package stringtype
 
 import (
 	"cmp"
+	"errors"
 
 	"github.com/voidwyrm-2/reqproc/runtime/types"
 	"github.com/voidwyrm-2/reqproc/runtime/types/basetype"
@@ -17,7 +18,7 @@ func New(value string) ReqStringType {
 }
 
 func (rst ReqStringType) String() string {
-	return "`" + rst.value + "`"
+	return rst.value
 }
 
 func (rst ReqStringType) Literal() any {
@@ -30,6 +31,26 @@ func (rst ReqStringType) Add(other types.ReqType) (types.ReqType, error) {
 	}
 
 	return New(rst.value + other.Literal().(string)), nil
+}
+
+func (rst ReqStringType) Mul(other types.ReqType) (types.ReqType, error) {
+	if other.Type() != types.TypeNumber {
+		return rst.ReqBaseType.Add(other)
+	}
+
+	value := other.Literal().(float32)
+	ivalue := int32(value)
+	if float32(ivalue) != value {
+		return nil, errors.New("cannot use float value as string multiplier")
+	}
+
+	s := ""
+
+	for range ivalue {
+		s += rst.value
+	}
+
+	return New(s), nil
 }
 
 func (rst ReqStringType) Cmp(other types.ReqType) (bool, int) {

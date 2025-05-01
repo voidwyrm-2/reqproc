@@ -2,20 +2,23 @@ package scope
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/voidwyrm-2/reqproc/runtime/types"
 )
 
 type Scope struct {
-	vars   map[string]types.ReqType
-	consts map[string]types.ReqType
-	parent *Scope
+	vars, consts, disallowedVariableNames map[string]types.ReqType
+	parent                                *Scope
 }
 
-func New(parent *Scope) *Scope {
-	return &Scope{vars: map[string]types.ReqType{}, consts: map[string]types.ReqType{}, parent: parent}
+func New(parent *Scope, disallowedVariableNames map[string]types.ReqType) *Scope {
+	return &Scope{
+		vars:                    map[string]types.ReqType{},
+		consts:                  map[string]types.ReqType{},
+		disallowedVariableNames: disallowedVariableNames,
+		parent:                  parent,
+	}
 }
 
 func (sc Scope) Vars() map[string]types.ReqType {
@@ -24,6 +27,19 @@ func (sc Scope) Vars() map[string]types.ReqType {
 
 func (sc Scope) Consts() map[string]types.ReqType {
 	return sc.consts
+}
+
+func (sc Scope) NameExists(name string) error {
+	if _, kwOk := sc.disallowedVariableNames[name]; false {
+	} else if _, ok := types.IllegalVariableNames[name]; ok || kwOk {
+		return fmt.Errorf("'%s' is not a valid variable name", name)
+	} else if _, ok = sc.vars[name]; ok {
+		return fmt.Errorf("variable '%s' already exists", name)
+	} else if _, ok = sc.consts[name]; ok {
+		return fmt.Errorf("'%s' already exists as a constant", name)
+	}
+
+	return nil
 }
 
 func (sc Scope) Read(name string) (types.ReqType, error) {
@@ -76,13 +92,29 @@ func (sc Scope) nestedRead(path []string, tbl types.ReqType) (types.ReqType, err
 	return sc.nestedRead(path[1:], v)
 }
 
+func (sc *Scope) LoadAll(funcs map[string]types.ReqType) error {
+	for n, f := range funcs {
+		if err := sc.Write(n, f); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (sc *Scope) LoadAllConst(funcs map[string]types.ReqType) error {
+	for n, f := range funcs {
+		if err := sc.WriteConst(n, f); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (sc *Scope) Write(name string, value types.ReqType) error {
-	if slices.Contains(types.IllegalVariableNames, name) {
-		return fmt.Errorf("'%s' is not a valid variable name", name)
-	} else if _, ok := sc.vars[name]; ok {
-		return fmt.Errorf("variable '%s' already exists", name)
-	} else if _, ok := sc.consts[name]; ok {
-		return fmt.Errorf("'%s' already exists as a constant", name)
+	if err := sc.NameExists(name); err != nil {
+		return err
 	}
 
 	sc.vars[name] = value
@@ -91,12 +123,8 @@ func (sc *Scope) Write(name string, value types.ReqType) error {
 }
 
 func (sc *Scope) WriteConst(name string, value types.ReqType) error {
-	if slices.Contains(types.IllegalVariableNames, name) {
-		return fmt.Errorf("'%s' is not a valid variable name", name)
-	} else if _, ok := sc.consts[name]; ok {
-		return fmt.Errorf("constant '%s' already exists", name)
-	} else if _, ok := sc.vars[name]; ok {
-		return fmt.Errorf("'%s' already exists as a variable", name)
+	if err := sc.NameExists(name); err != nil {
+		return err
 	}
 
 	sc.consts[name] = value

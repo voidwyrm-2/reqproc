@@ -22,58 +22,62 @@ func New(value float32) ReqNumberType {
 	return ReqNumberType{value: value, ReqBaseType: basetype.New(types.TypeNumber)}
 }
 
-func (rst ReqNumberType) String() string {
-	return fmt.Sprint(rst.value)
+func (rnt ReqNumberType) String() string {
+	return fmt.Sprint(rnt.value)
 }
 
-func (rst ReqNumberType) Literal() any {
-	return rst.value
+func (rnt ReqNumberType) Literal() any {
+	return rnt.value
 }
 
-func (rst ReqNumberType) Add(other types.ReqType) (types.ReqType, error) {
-	if other.Type() != types.TypeString {
-		return rst.ReqBaseType.Add(other)
+func (rnt ReqNumberType) Add(other types.ReqType) (types.ReqType, error) {
+	if other.Type() != types.TypeNumber {
+		return rnt.ReqBaseType.Add(other)
 	}
 
-	return New(rst.value + other.Literal().(float32)), nil
+	return New(rnt.value + other.Literal().(float32)), nil
 }
 
-func (rst ReqNumberType) Sub(other types.ReqType) (types.ReqType, error) {
-	if other.Type() != types.TypeString {
-		return rst.ReqBaseType.Sub(other)
+func (rnt ReqNumberType) Sub(other types.ReqType) (types.ReqType, error) {
+	if other.Type() != types.TypeNumber {
+		return rnt.ReqBaseType.Sub(other)
 	}
 
-	return New(rst.value - other.Literal().(float32)), nil
+	return New(rnt.value - other.Literal().(float32)), nil
 }
 
-func (rst ReqNumberType) Mul(other types.ReqType) (types.ReqType, error) {
-	if other.Type() != types.TypeString {
-		return rst.ReqBaseType.Mul(other)
+func (rnt ReqNumberType) Mul(other types.ReqType) (types.ReqType, error) {
+	if other.Type() != types.TypeNumber {
+		return rnt.ReqBaseType.Mul(other)
 	}
 
-	return New(rst.value * other.Literal().(float32)), nil
+	return New(rnt.value * other.Literal().(float32)), nil
 }
 
-func (rst ReqNumberType) Div(other types.ReqType) (types.ReqType, error) {
-	if other.Type() != types.TypeString {
-		return rst.ReqBaseType.Div(other)
+func (rnt ReqNumberType) Div(other types.ReqType) (types.ReqType, error) {
+	if other.Type() != types.TypeNumber {
+		return rnt.ReqBaseType.Div(other)
 	}
 
-	return New(rst.value / other.Literal().(float32)), nil
+	return New(rnt.value / other.Literal().(float32)), nil
 }
 
-func (rst ReqNumberType) Not() (types.ReqType, error) {
-	if rst.value == 0 {
+func (rnt ReqNumberType) Not() (types.ReqType, error) {
+	if rnt.value == 0 {
 		return ValueFalse, nil
 	}
 
 	return ValueTrue, nil
 }
 
-func (rst ReqNumberType) Cmp(other types.ReqType) (bool, int) {
-	if other.Type() != types.TypeString {
-		return rst.ReqBaseType.Cmp(other)
+func (rnt ReqNumberType) Cmp(other types.ReqType) (bool, int) {
+	if other.Type() != types.TypeNumber {
+		return rnt.ReqBaseType.Cmp(other)
 	}
 
-	return rst.value == other.Literal().(float32), cmp.Compare(rst.value, other.Literal().(float32))
+	return rnt.value == other.Literal().(float32), cmp.Compare(rnt.value, other.Literal().(float32))
+}
+
+func (rnt ReqNumberType) IsFloat() bool {
+	return float32(int32(rnt.value)) != rnt.value
 }

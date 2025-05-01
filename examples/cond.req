@@ -1,0 +1,12 @@
+; this example is not functioning at the moment
+
+"io" import
+"runtime" import
+
+0 (|0.1 "yes!") (|0.1 "no!") if
+1 (|0.1 "yes!") (|0.1 "no!") if
+20 (|0.1 "yes!") (|0.1 "no!") if
+-30 (|0.1 "yes!") (|0.1 "no!") if
+
+runtime.stacklen
+io.dump

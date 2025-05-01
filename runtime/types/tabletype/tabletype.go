@@ -18,11 +18,40 @@ func New(value map[string]types.ReqType) ReqTableType {
 }
 
 func (tbt ReqTableType) String() string {
+	/*
+		if m, ok := tbt.value["__string"]; ok {
+			if m.Type() == types.TypeFunction {
+			} else if m.Type() == types.TypeString {
+				return m.Literal().(string)
+			}
+		}
+	*/
+
 	return fmt.Sprint(tbt.value)
 }
 
 func (tbt ReqTableType) Literal() any {
 	return tbt.value
+}
+
+func (tbt ReqTableType) Add(other types.ReqType) (types.ReqType, error) {
+	return tbt.ReqBaseType.Add(other)
+}
+
+func (tbt ReqTableType) Sub(other types.ReqType) (types.ReqType, error) {
+	return tbt.ReqBaseType.Sub(other)
+}
+
+func (tbt ReqTableType) Mul(other types.ReqType) (types.ReqType, error) {
+	return tbt.ReqBaseType.Mul(other)
+}
+
+func (tbt ReqTableType) Div(other types.ReqType) (types.ReqType, error) {
+	return tbt.ReqBaseType.Div(other)
+}
+
+func (tbt ReqTableType) Cmp(other types.ReqType) (bool, int) {
+	return tbt.ReqBaseType.Cmp(other)
 }
 
 func (tbt ReqTableType) Length() (int, error) {

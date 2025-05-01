@@ -2,24 +2,34 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
-	"regexp"
-	"strconv"
-	"strings"
 
 	"github.com/voidwyrm-2/reqproc/lexer"
+	"github.com/voidwyrm-2/reqproc/runtime"
 	"github.com/voidwyrm-2/reqproc/runtime/interpreter"
 	"github.com/voidwyrm-2/reqproc/runtime/scope"
+	"github.com/voidwyrm-2/reqproc/runtime/types"
 )
 
 func _main() error {
+	fpath := flag.String("f", "", "The file to interpret")
+	showTokens := flag.Bool("t", false, "Show the generated tokens")
+	runREPL := flag.Bool("repl", false, "Run the repl instead of a file")
+
+	flag.Parse()
+
+	if *runREPL {
+		return repl()
+	}
+
 	if len(os.Args) < 2 {
 		return errors.New("expected 'reqproc <file>'")
 	}
 
-	file, err := os.Open(os.Args[1])
+	file, err := os.Open(*fpath)
 	defer file.Close()
 	if err != nil {
 		return err
@@ -37,7 +47,17 @@ func _main() error {
 		return err
 	}
 
-	interp := interpreter.New(scope.New(nil))
+	if *showTokens {
+		for _, t := range tokens {
+			fmt.Println(t)
+		}
+		fmt.Println()
+	}
+
+	interp, err := interpreter.New(scope.New(nil, map[string]types.ReqType{}))
+	if err != nil {
+		return err
+	}
 
 	_, err = interp.ExecuteTokens(tokens)
 
@@ -45,25 +65,10 @@ func _main() error {
 }
 
 func main() {
-	exm, err := regexp.Compile(`error on line [0-9]+, col [0-9]+: [0-9]+ EXIT`)
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
-
 	if err := _main(); err != nil {
-		if exm.MatchString(err.Error()) {
-			spl := strings.Split(err.Error(), " ")
-			ec, err := strconv.Atoi(spl[len(spl)-2])
-			if err != nil {
-				fmt.Println(err.Error())
-				os.Exit(1)
-			}
+		runtime.HandleExitPanic(err)
 
-			os.Exit(ec)
-		}
-
-		fmt.Println(err.Error())
+		os.Stderr.WriteString(err.Error() + "\n")
 		os.Exit(1)
 	}
 }
