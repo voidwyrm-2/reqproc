@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/voidwyrm-2/reqproc/runtime"
 	"github.com/voidwyrm-2/reqproc/runtime/interpreter"
 )
 
@@ -13,7 +14,7 @@ func repl() error {
 	scn := bufio.NewScanner(os.Stdin)
 	acc := []string{}
 
-	fmt.Println("ReqProc REPL")
+	fmt.Println("ReqProc REPL, interpreter version", runtime.REQPROC_VERSION)
 
 	for {
 		fmt.Print("> ")

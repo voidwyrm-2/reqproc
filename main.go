@@ -16,10 +16,15 @@ import (
 
 func _main() error {
 	fpath := flag.String("f", "", "The file to interpret")
+	showVersion := flag.Bool("v", false, "Prints the interpreter version and exits")
 	showTokens := flag.Bool("t", false, "Show the generated tokens")
 	runREPL := flag.Bool("repl", false, "Run the repl instead of a file")
 
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println("ReqProc interpreter, version", runtime.REQPROC_VERSION)
+	}
 
 	if *runREPL {
 		return repl()
