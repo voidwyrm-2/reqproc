@@ -21,6 +21,13 @@ var charTokenMap = map[rune]tokens.TokenKind{
 	']': tokens.BracketClose,
 }
 
+var singleIdents = map[rune]struct{}{
+	'+': {},
+	'-': {},
+	'*': {},
+	'/': {},
+}
+
 type Lexer struct {
 	text         string
 	idx, col, ln int
@@ -176,9 +183,17 @@ func (l *Lexer) collectIdent(kind tokens.TokenKind, adv bool) tokens.Token {
 		l.advance()
 	}
 
-	for l.ch != -1 && l.isIdent() {
+	if _, ok := singleIdents[l.ch]; ok {
 		lit += string(l.ch)
 		l.advance()
+	} else {
+		for l.ch != -1 && l.isIdent() {
+			if _, ok := singleIdents[l.ch]; ok {
+				break
+			}
+			lit += string(l.ch)
+			l.advance()
+		}
 	}
 
 	return tokens.New(kind, lit, start, startln)
@@ -194,8 +209,8 @@ func (l *Lexer) Lex() ([]tokens.Token, error) {
 				l.advance()
 			}
 		case '!':
-			if l.peek() == '[' {
-				toks = append(toks, tokens.New(tokens.AssignIndex, string(l.ch)+"[", l.col, l.ln))
+			if l.peek() == '#' {
+				toks = append(toks, tokens.New(tokens.AssignIndex, string(l.ch)+"#", l.col, l.ln))
 				l.advance()
 				l.advance()
 			} else if !isIdent(l.peek()) {
@@ -209,8 +224,8 @@ func (l *Lexer) Lex() ([]tokens.Token, error) {
 			}
 			toks = append(toks, l.collectIdent(tokens.Const, true))
 		case '@':
-			if l.peek() == '[' {
-				toks = append(toks, tokens.New(tokens.GetIndex, string(l.ch)+"[", l.col, l.ln))
+			if l.peek() == '#' {
+				toks = append(toks, tokens.New(tokens.GetIndex, string(l.ch)+"#", l.col, l.ln))
 				l.advance()
 				l.advance()
 			} else if !isIdent(l.peek()) {

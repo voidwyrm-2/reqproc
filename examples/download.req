@@ -1,8 +1,10 @@
 "io" import
 "web" import
 
-"https://voidwyrm-2.github.io" web.download
-err error
+try
+ "https://voidwyrm-2.github.io" web.download
+ err error
+notry
 
 0 exit
 

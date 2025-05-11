@@ -1,10 +1,13 @@
 package listtype
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/voidwyrm-2/reqproc/runtime/types"
 	"github.com/voidwyrm-2/reqproc/runtime/types/basetype"
+	"github.com/voidwyrm-2/reqproc/runtime/types/numbertype"
 )
 
 type ReqListType struct {
@@ -101,4 +104,42 @@ func (rlt ReqListType) Div(other types.ReqType) (types.ReqType, error) {
 
 func (rlt ReqListType) Length() (int, error) {
 	return len(rlt.value), nil
+}
+
+func (rlt ReqListType) GetIndex(index types.ReqType) (types.ReqType, error) {
+	if index.Type() != types.TypeNumber {
+		return rlt.ReqBaseType.GetIndex(index)
+	}
+
+	nt := index.(numbertype.ReqNumberType)
+	if nt.IsFloat() {
+		return nil, errors.New("cannot use float value as index")
+	}
+
+	n := int(nt.Literal().(float32))
+	if n >= len(rlt.value) {
+		return nil, fmt.Errorf("index %d out of range for length %d", n, len(rlt.value))
+	}
+
+	return rlt.value[n], nil
+}
+
+func (rlt ReqListType) SetIndex(index types.ReqType, value types.ReqType) error {
+	if index.Type() != types.TypeNumber {
+		return rlt.ReqBaseType.SetIndex(index, value)
+	}
+
+	nt := index.(numbertype.ReqNumberType)
+	if nt.IsFloat() {
+		return errors.New("cannot use float value as index")
+	}
+
+	n := int(nt.Literal().(float32))
+	if n >= len(rlt.value) {
+		return fmt.Errorf("index %d out of range for length %d", n, len(rlt.value))
+	}
+
+	rlt.value[n] = value
+
+	return nil
 }

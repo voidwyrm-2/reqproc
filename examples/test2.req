@@ -1,7 +1,9 @@
 "io" import
 
-"test1.req" io.readf
-err error
+try
+ "test1.req" io.readf
+ err error
+notry
 
 io.putl
 

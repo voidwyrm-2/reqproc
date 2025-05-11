@@ -3,6 +3,8 @@ package numbertype
 import (
 	"cmp"
 	"fmt"
+	"math"
+	"strconv"
 
 	"github.com/voidwyrm-2/reqproc/runtime/types"
 	"github.com/voidwyrm-2/reqproc/runtime/types/basetype"
@@ -20,6 +22,14 @@ type ReqNumberType struct {
 
 func New(value float32) ReqNumberType {
 	return ReqNumberType{value: value, ReqBaseType: basetype.New(types.TypeNumber)}
+}
+
+func FromString(str string) (ReqNumberType, error) {
+	if n, err := strconv.ParseFloat(str, 32); err != nil {
+		return ReqNumberType{}, err
+	} else {
+		return New(float32(n)), nil
+	}
 }
 
 func (rnt ReqNumberType) String() string {
@@ -79,5 +89,6 @@ func (rnt ReqNumberType) Cmp(other types.ReqType) (bool, int) {
 }
 
 func (rnt ReqNumberType) IsFloat() bool {
-	return float32(int32(rnt.value)) != rnt.value
+	_, fr := math.Modf(float64(rnt.value))
+	return fr != 0
 }

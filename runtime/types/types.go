@@ -71,6 +71,16 @@ type ReqType interface {
 	Not() (ReqType, error)
 	Cmp(other ReqType) (bool, int) // equality, less/greater
 	Length() (int, error)
+	GetIndex(index ReqType) (ReqType, error)
+	SetIndex(index ReqType, value ReqType) error
+}
+
+func ExpectType(expected, actual ReqVarType) error {
+	if expected != actual {
+		return fmt.Errorf("expected type '%s' but found '%s' instead", expected.String(), actual.String())
+	}
+
+	return nil
 }
 
 func InvalidOperation(operation string, typeA, typeB ReqType) error {

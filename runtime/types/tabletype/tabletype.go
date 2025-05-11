@@ -34,26 +34,6 @@ func (tbt ReqTableType) Literal() any {
 	return tbt.value
 }
 
-func (tbt ReqTableType) Add(other types.ReqType) (types.ReqType, error) {
-	return tbt.ReqBaseType.Add(other)
-}
-
-func (tbt ReqTableType) Sub(other types.ReqType) (types.ReqType, error) {
-	return tbt.ReqBaseType.Sub(other)
-}
-
-func (tbt ReqTableType) Mul(other types.ReqType) (types.ReqType, error) {
-	return tbt.ReqBaseType.Mul(other)
-}
-
-func (tbt ReqTableType) Div(other types.ReqType) (types.ReqType, error) {
-	return tbt.ReqBaseType.Div(other)
-}
-
-func (tbt ReqTableType) Cmp(other types.ReqType) (bool, int) {
-	return tbt.ReqBaseType.Cmp(other)
-}
-
 func (tbt ReqTableType) Length() (int, error) {
 	return len(tbt.value), nil
 }

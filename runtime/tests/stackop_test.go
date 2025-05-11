@@ -3,7 +3,6 @@ package test
 import (
 	"fmt"
 	"math/rand"
-	"slices"
 	"strings"
 	"testing"
 
@@ -42,8 +41,6 @@ func TestAddition(t *testing.T) {
 			operands = append(operands, fmt.Sprint(a), fmt.Sprint(b), "+")
 		}
 
-		slices.Reverse(expected)
-
 		return stackTestCase{
 			strings.Join(operands, " "),
 			expected,
@@ -73,8 +70,6 @@ func TestAddition(t *testing.T) {
 			})
 			operands = append(operands, fmt.Sprint(a), fmt.Sprint(b), "+")
 		}
-
-		slices.Reverse(expected)
 
 		return stackTestCase{
 			strings.Join(operands, " "),
@@ -106,8 +101,6 @@ func TestAddition(t *testing.T) {
 			})
 			operands = append(operands, `"`+a+`"`, `"`+b+`"`, "+")
 		}
-
-		slices.Reverse(expected)
 
 		return stackTestCase{
 			strings.Join(operands, " "),
@@ -145,8 +138,6 @@ func TestSubtraction(t *testing.T) {
 			operands = append(operands, fmt.Sprint(a), fmt.Sprint(b), "-")
 		}
 
-		slices.Reverse(expected)
-
 		return stackTestCase{
 			strings.Join(operands, " "),
 			expected,
@@ -176,8 +167,6 @@ func TestSubtraction(t *testing.T) {
 			})
 			operands = append(operands, fmt.Sprint(a), fmt.Sprint(b), "-")
 		}
-
-		slices.Reverse(expected)
 
 		return stackTestCase{
 			strings.Join(operands, " "),
@@ -215,8 +204,6 @@ func TestMultiplication(t *testing.T) {
 			operands = append(operands, fmt.Sprint(a), fmt.Sprint(b), "*")
 		}
 
-		slices.Reverse(expected)
-
 		return stackTestCase{
 			strings.Join(operands, " "),
 			expected,
@@ -246,8 +233,6 @@ func TestMultiplication(t *testing.T) {
 			})
 			operands = append(operands, fmt.Sprint(a), fmt.Sprint(b), "*")
 		}
-
-		slices.Reverse(expected)
 
 		return stackTestCase{
 			strings.Join(operands, " "),
@@ -285,8 +270,6 @@ func TestMultiplication(t *testing.T) {
 			})
 			operands = append(operands, `"`+a+`"`, fmt.Sprint(b), "*")
 		}
-
-		slices.Reverse(expected)
 
 		return stackTestCase{
 			strings.Join(operands, " "),
@@ -326,8 +309,6 @@ func TestDivision(t *testing.T) {
 			operands = append(operands, fmt.Sprint(a), fmt.Sprint(b), "/")
 		}
 
-		slices.Reverse(expected)
-
 		return stackTestCase{
 			strings.Join(operands, " "),
 			expected,
@@ -357,8 +338,6 @@ func TestDivision(t *testing.T) {
 			})
 			operands = append(operands, fmt.Sprint(a), fmt.Sprint(b), "/")
 		}
-
-		slices.Reverse(expected)
 
 		return stackTestCase{
 			strings.Join(operands, " "),

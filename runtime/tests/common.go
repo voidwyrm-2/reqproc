@@ -1,8 +1,8 @@
 package test
 
 import (
-	"fmt"
 	"math/rand"
+	"reflect"
 	"testing"
 
 	"github.com/voidwyrm-2/reqproc/runtime/interpreter"
@@ -37,38 +37,37 @@ func testStack(t *testing.T, cases []stackTestCase) {
 	for _, c := range cases {
 		i, err := interpreter.New(scope.New(nil, map[string]types.ReqType{}))
 		if err != nil {
-			t.Fatal(err.Error())
+			t.Error(err.Error())
 		}
 
 		result, err := i.Execute(c.input)
 		if err != nil {
-			t.Fatal(err.Error())
+			t.Error(err.Error() + " (with `" + c.input + "`)")
 		}
 
 		if len(result) != len(c.expected) {
-			fmt.Println(result, c.input)
-			t.Fatalf("expected %d values to be on the stack, but found %d instead", len(c.expected), len(result))
+			t.Errorf("expected %d values to be on the stack, but found %d instead (with `%s`)", len(c.expected), len(result), c.input)
 		}
 
-		for i, j := len(result)-1, 0; j < len(c.expected); j++ {
-			r := result[i]
-			e := c.expected[j]
+		for i := len(result) - 1; i != 0; i-- {
+			e, r := c.expected[i], result[i]
 
-			// the test reults were consistently getting a .00001 difference
-			cond := r.Literal() == e.v
-			if f1, ok := r.Literal().(float32); ok {
+			cond := reflect.DeepEqual(r.Literal(), e.v)
+			if e.v == nil {
+				cond = true
+			} else if f1, ok := r.Literal().(float32); ok { // the test reults were consistently getting a .00001 difference
 				if f2, ok := e.v.(float32); ok {
 					cond = f1 >= f2-.00001 && f1 <= f2+.00001
 				}
+			} else if checkf, ok := e.v.(func(types.ReqType) bool); ok {
+				cond = checkf(r)
 			}
 
-			if r.Type() != e.t {
-				t.Fatalf("expected type %s at position %d, but found %s instead", e.t.String(), i, r.Type().String())
+			if r.Type()&e.t != r.Type() {
+				t.Errorf("expected type %s at position %d, but found %s instead (with `%s`)", e.t.String(), i, r.Type().String(), c.input)
 			} else if !cond {
-				t.Fatalf("expected value '%v' at position %d, but found '%v' instead", e.v, j, r.Literal())
+				t.Errorf("expected value '%v' at position %d, but found '%v' instead (with `%s`)", e.v, i, r.Literal(), c.input)
 			}
-
-			i--
 		}
 	}
 }

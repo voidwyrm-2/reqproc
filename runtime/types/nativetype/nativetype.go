@@ -2,6 +2,7 @@ package nativetype
 
 import (
 	"fmt"
+	"unsafe"
 
 	"github.com/voidwyrm-2/reqproc/runtime/types"
 	"github.com/voidwyrm-2/reqproc/runtime/types/basetype"
@@ -9,10 +10,10 @@ import (
 
 type ReqNativeType struct {
 	basetype.ReqBaseType
-	value any
+	value unsafe.Pointer
 }
 
-func New(value any) ReqNativeType {
+func New(value unsafe.Pointer) ReqNativeType {
 	return ReqNativeType{value: value, ReqBaseType: basetype.New(types.TypeNative)}
 }
 

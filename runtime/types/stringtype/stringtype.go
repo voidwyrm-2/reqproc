@@ -3,9 +3,11 @@ package stringtype
 import (
 	"cmp"
 	"errors"
+	"fmt"
 
 	"github.com/voidwyrm-2/reqproc/runtime/types"
 	"github.com/voidwyrm-2/reqproc/runtime/types/basetype"
+	"github.com/voidwyrm-2/reqproc/runtime/types/numbertype"
 )
 
 type ReqStringType struct {
@@ -64,3 +66,43 @@ func (rst ReqStringType) Cmp(other types.ReqType) (bool, int) {
 func (rst ReqStringType) Length() (int, error) {
 	return len(rst.value), nil
 }
+
+func (rlt ReqStringType) GetIndex(index types.ReqType) (types.ReqType, error) {
+	if index.Type() != types.TypeNumber {
+		return rlt.ReqBaseType.GetIndex(index)
+	}
+
+	nt := index.(numbertype.ReqNumberType)
+	if nt.IsFloat() {
+		return nil, errors.New("cannot use float value as index")
+	}
+
+	n := int(nt.Literal().(float32))
+	if n >= len(rlt.value) {
+		return nil, fmt.Errorf("index %d out of range for length %d", n, len(rlt.value))
+	}
+
+	return New(string(rlt.value[n])), nil
+}
+
+/*
+func (rlt ReqStringType) SetIndex(index types.ReqType, value types.ReqType) error {
+	if index.Type() != types.TypeNumber {
+		return rlt.ReqBaseType.SetIndex(index, value)
+	}
+
+	nt := index.(numbertype.ReqNumberType)
+	if nt.IsFloat() {
+		return errors.New("cannot use float value as index")
+	}
+
+	n := int(nt.Literal().(float32))
+	if n >= len(rlt.value) {
+		return fmt.Errorf("index %d out of range for length %d", n, len(rlt.value))
+	}
+
+	rlt.value[n] = value
+
+	return nil
+}
+*/

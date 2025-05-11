@@ -1,10 +1,12 @@
 package stdlib
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/voidwyrm-2/reqproc/runtime"
@@ -15,7 +17,12 @@ import (
 	"github.com/voidwyrm-2/reqproc/runtime/types/listtype"
 	"github.com/voidwyrm-2/reqproc/runtime/types/numbertype"
 	"github.com/voidwyrm-2/reqproc/runtime/types/stringtype"
+	"github.com/voidwyrm-2/reqproc/runtime/types/tabletype"
 )
+
+func floatInvalidFor(msg string) error {
+	return errors.New("cannot use float value as " + msg)
+}
 
 /*
 Contains all the natively written functions
@@ -32,13 +39,15 @@ var Stdlib = map[string]map[string]types.ReqType{
 		"doc": functiontype.NewNative(func(sc *scope.Scope, st *stack.Stack, callf func(rft functiontype.ReqFunctionType, sc *scope.Scope, st *stack.Stack) error) error {
 			f := st.Pop().(functiontype.ReqFunctionType)
 
-			st.Push(stringtype.New(f.Doc()))
+			fmt.Println(f.Doc())
 
 			return nil
 		}, []types.ReqVarType{types.TypeFunction}, []types.ReqVarType{types.TypeString}).SetDoc("Returns the docstring of the function it's called on"),
 
 		"sig": functiontype.NewNative(func(sc *scope.Scope, st *stack.Stack, callf func(rft functiontype.ReqFunctionType, sc *scope.Scope, st *stack.Stack) error) error {
-			st.Push(numbertype.New(st.Pop().(functiontype.ReqFunctionType).Signature()))
+			v := st.Pop().(functiontype.ReqFunctionType)
+
+			st.Push(numbertype.New(v.Signature()))
 
 			return nil
 		}, []types.ReqVarType{types.TypeFunction}, []types.ReqVarType{types.TypeNumber}).SetDoc("Returns the I/O signature of the function it's called on"),
@@ -143,12 +152,31 @@ var Stdlib = map[string]map[string]types.ReqType{
 
 			return nil
 		}, []types.ReqVarType{types.TypeFunction, types.TypeAny}, []types.ReqVarType{types.TypeAny, types.TypeAny}).SetDoc("Pops a value off the stack then calls a function"),
+		"range": functiontype.NewNative(func(sc *scope.Scope, st *stack.Stack, callf func(rft functiontype.ReqFunctionType, sc *scope.Scope, st *stack.Stack) error) error {
+			v := st.Pop().(numbertype.ReqNumberType)
+
+			if v.IsFloat() {
+				return floatInvalidFor("range argument")
+			}
+
+			n := int(v.Literal().(float32))
+
+			ran := []types.ReqType{}
+
+			for i := range n {
+				ran = append(ran, numbertype.New(float32(i)))
+			}
+
+			st.Push(listtype.New(ran...))
+
+			return nil
+		}, []types.ReqVarType{types.TypeNumber}, []types.ReqVarType{types.TypeList}),
 	},
 	"runtime": {
 		"version": functiontype.NewNative(func(sc *scope.Scope, st *stack.Stack, callf func(rft functiontype.ReqFunctionType, sc *scope.Scope, st *stack.Stack) error) error {
-			st.Push(numbertype.New(runtime.REQPROC_VERSION))
+			st.Push(stringtype.New(runtime.REQPROC_VERSION))
 			return nil
-		}, []types.ReqVarType{}, []types.ReqVarType{types.TypeNumber}).SetDoc("Returns the current version of ReqProc"),
+		}, []types.ReqVarType{}, []types.ReqVarType{types.TypeString}).SetDoc("Returns the current version of ReqProc"),
 
 		"stacklen": functiontype.NewNative(func(sc *scope.Scope, st *stack.Stack, callf func(rft functiontype.ReqFunctionType, sc *scope.Scope, st *stack.Stack) error) error {
 			st.Push(numbertype.New(float32(st.Len())))
@@ -156,7 +184,28 @@ var Stdlib = map[string]map[string]types.ReqType{
 			return nil
 		}, []types.ReqVarType{}, []types.ReqVarType{types.TypeNumber}).SetDoc("Returns the length of the stack"),
 	},
-	//"os": {},
+	"os": {
+		"fs": tabletype.New(map[string]types.ReqType{
+			"items": functiontype.NewNative(func(sc *scope.Scope, st *stack.Stack, callf func(rft functiontype.ReqFunctionType, sc *scope.Scope, st *stack.Stack) error) error {
+				path := st.Pop().(stringtype.ReqStringType)
+
+				items, err := os.ReadDir(filepath.Clean(path.Literal().(string)))
+				if err != nil {
+					return err
+				}
+
+				list := []types.ReqType{}
+
+				for _, item := range items {
+					list = append(list, stringtype.New(item.Name()))
+				}
+
+				st.Push(listtype.New(list...))
+
+				return nil
+			}, []types.ReqVarType{types.TypeString}, []types.ReqVarType{types.TypeList}).SetDoc("Returns a list of the items in the given directory"),
+		}),
+	},
 	"io": {
 		"put": functiontype.NewSigNative(func(sc *scope.Scope, st *stack.Stack, callf func(rft functiontype.ReqFunctionType, sc *scope.Scope, st *stack.Stack) error) error {
 			fmt.Print(st.Pop())
@@ -250,6 +299,4 @@ var Stdlib = map[string]map[string]types.ReqType{
 			return nil
 		}, []types.ReqVarType{types.TypeString, types.TypeString}, []types.ReqVarType{types.TypeString}),
 	},
-	//"ooptools": {},
-	//"fptools":  {},
 }

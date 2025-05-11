@@ -1,6 +1,7 @@
 package interpreter
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -14,6 +15,7 @@ import (
 	"github.com/voidwyrm-2/reqproc/runtime/stdlib"
 	"github.com/voidwyrm-2/reqproc/runtime/types"
 	"github.com/voidwyrm-2/reqproc/runtime/types/functiontype"
+	"github.com/voidwyrm-2/reqproc/runtime/types/listtype"
 	"github.com/voidwyrm-2/reqproc/runtime/types/numbertype"
 	"github.com/voidwyrm-2/reqproc/runtime/types/stringtype"
 	"github.com/voidwyrm-2/reqproc/runtime/types/tabletype"
@@ -148,7 +150,7 @@ func (i *Interpreter) ExecuteTokens(toks []tokens.Token) ([]types.ReqType, error
 			return expectKindsForwardInTokens(it, toks, kinds...)
 		}
 
-		collectInPairForward := func(anchor tokens.Token, a, b tokens.TokenKind) ([]tokens.Token, error) {
+		collectInPairForward := func(anchor tokens.Token, a, b tokens.TokenKind, filter func(tokens.Token) bool) ([]tokens.Token, error) {
 			contained := []tokens.Token{}
 
 			nest := 0
@@ -161,12 +163,18 @@ func (i *Interpreter) ExecuteTokens(toks []tokens.Token) ([]types.ReqType, error
 					} else {
 						return contained, nil
 					}
+				} else if !filter(t) {
+					return []tokens.Token{}, t.Errf("token '%s' is not valid inside %s %s", t.Kind().PublicString(), a.PublicString(), b.PublicString())
 				}
 
 				contained = append(contained, t)
 			}
 
-			return contained, anchor.Errf("no '%s' to match '%s'", b.String(), a.String())
+			if len(contained) == 0 {
+				contained = append(contained, anchor)
+			}
+
+			return []tokens.Token{}, contained[len(contained)-1].Errf("no '%s' to match '%s'", b.PublicString(), a.PublicString())
 		}
 
 		switch cur.Kind() {
@@ -176,10 +184,10 @@ func (i *Interpreter) ExecuteTokens(toks []tokens.Token) ([]types.ReqType, error
 			i.stack.Push(stringtype.New(cur.Lit()))
 			it++
 		case tokens.Number:
-			if n, err := strconv.ParseFloat(toks[it].Lit(), 32); err != nil {
+			if val, err := numbertype.FromString(toks[it].Lit()); err != nil {
 				return []types.ReqType{}, cur.Err(err)
 			} else {
-				i.stack.Push(numbertype.New(float32(n)))
+				i.stack.Push(val)
 			}
 			it++
 		case tokens.Ident:
@@ -304,6 +312,38 @@ func (i *Interpreter) ExecuteTokens(toks []tokens.Token) ([]types.ReqType, error
 				return []types.ReqType{}, cur.Err(err)
 			}
 			it++
+		case tokens.GetIndex:
+			// we don't check for any specific type because 1. we don't have to change it for any future indexables, and 2. the GetIndex functions handles that
+			// index, indexable
+			if err := i.stack.Expect(types.TypeAny, types.TypeAny); err != nil {
+				return []types.ReqType{}, cur.Err(err)
+			} else {
+				index, indexable := i.stack.Pop(), i.stack.Pop()
+
+				result, err := indexable.GetIndex(index)
+				if err != nil {
+					return []types.ReqType{}, cur.Err(err)
+				}
+
+				i.stack.Push(result)
+			}
+			it++
+		case tokens.AssignIndex:
+			// see the commend under `case tokens.GetIndex` for why we aren't checking the types
+			// item, index, indexable
+			if err := i.stack.Expect(types.TypeAny, types.TypeAny, types.TypeAny); err != nil {
+				return []types.ReqType{}, cur.Err(err)
+			} else {
+				item, index, indexable := i.stack.Pop(), i.stack.Pop(), i.stack.Pop()
+
+				err := indexable.SetIndex(index, item)
+				if err != nil {
+					return []types.ReqType{}, cur.Err(err)
+				}
+
+				i.stack.Push(indexable)
+			}
+			it++
 		case tokens.Const:
 			if err := i.stack.Expect(types.TypeAny); err != nil {
 				return []types.ReqType{}, cur.Err(err)
@@ -314,7 +354,9 @@ func (i *Interpreter) ExecuteTokens(toks []tokens.Token) ([]types.ReqType, error
 		case tokens.ParenOpen:
 			// collect the tokens until the matching ')'
 			// the function keeps track of how many pairs deep we are
-			if fcontent, err := collectInPairForward(toks[it], tokens.ParenOpen, tokens.ParenClose); err != nil {
+			if fcontent, err := collectInPairForward(toks[it], tokens.ParenOpen, tokens.ParenClose, func(t tokens.Token) bool {
+				return true
+			}); err != nil {
 				if i.modeTry {
 					i.err = err.Error()
 				} else {
@@ -333,6 +375,41 @@ func (i *Interpreter) ExecuteTokens(toks []tokens.Token) ([]types.ReqType, error
 				i.stack.Push(functiontype.New(fcontent[1:], float32(sig)))
 
 				it += len(fcontent) + 2
+			}
+		case tokens.BracketOpen:
+			if lcontent, err := collectInPairForward(toks[it], tokens.BracketOpen, tokens.BracketClose, func(t tokens.Token) bool {
+				return t.Iskind(tokens.GetValue) || t.Iskind(tokens.String) || t.Iskind(tokens.Number)
+			}); err != nil {
+				if i.modeTry {
+					i.err = err.Error()
+				} else {
+					return []types.ReqType{}, err
+				}
+			} else {
+				list := []types.ReqType{}
+
+				for _, t := range lcontent {
+					if t.Iskind(tokens.GetValue) {
+						if v, err := i.scope.Read(t.Lit()); err != nil {
+							return []types.ReqType{}, err
+						} else {
+							list = append(list, v)
+						}
+					} else if t.Iskind(tokens.String) {
+						list = append(list, stringtype.New(t.Lit()))
+					} else if t.Iskind(tokens.Number) {
+						if val, err := numbertype.FromString(t.Lit()); err != nil {
+							return []types.ReqType{}, cur.Err(err)
+						} else {
+							list = append(list, val)
+						}
+					} else {
+						panic(fmt.Sprintf("somehow found token %s (or, `%s`) during list parsing", t.String(), t.Kind().PublicString()))
+					}
+				}
+
+				i.stack.Push(listtype.New(list...))
+				it += len(lcontent) + 2
 			}
 		default:
 			return []types.ReqType{}, cur.Errf("unexpected token '%s'", cur.Lit())

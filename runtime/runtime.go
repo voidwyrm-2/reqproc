@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const REQPROC_VERSION = 3.0
+const REQPROC_VERSION = "3.2"
 
 func HandleExitPanic(e error) {
 	if e != nil {
