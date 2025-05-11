@@ -15,6 +15,9 @@ def smother(fn: Callable, *args: Any) -> Any:
         pass
 
 
+with open("version.txt", "rt") as v:
+    VERSION = v.read().strip()
+
 APPNAME = "reqproc"
 MAKE = "makefile"
 OUTFOLDER = "build"
@@ -39,7 +42,7 @@ def create_commands(targets: dict[str, list[str]]) -> list[str]:
         "\n".join(
             [
                 f"\tGOOS={tos} GOARCH={tarch} go build -o {BPATH} .\n"
-                + f"\tzip -r {BPATH}-{tos}_{tarch}.zip {BPATH}\n"
+                + f"\tzip -r {BPATH}-{tos}_{tarch}-{VERSION}.zip {BPATH}\n"
                 + f"\trm -rf {BPATH}"
                 for tarch in tarches
             ]
@@ -52,8 +55,6 @@ def generate_targets(targets: dict[str, list[str]]) -> str:
     return (
         "main: clean\n"
         + "\n".join(create_commands(targets))
-        + "\n\nlocal: clean\n\t"
-        + "\n".join(create_commands({"wasip1": ["wasm"], "darwin": ["arm64"]}))
         + f"\n\nclean:\n\trm -rf {OUTFOLDER}\n\tmkdir {OUTFOLDER}"
     )
 
