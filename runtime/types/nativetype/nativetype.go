@@ -18,7 +18,7 @@ func New(value unsafe.Pointer) ReqNativeType {
 }
 
 func (rnt ReqNativeType) String() string {
-	return "`" + fmt.Sprint(rnt.value) + "`"
+	return "<" + fmt.Sprint(rnt.value) + ">"
 }
 
 func (rnt ReqNativeType) Literal() any {

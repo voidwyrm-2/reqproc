@@ -100,7 +100,7 @@ func _main() error {
 
 func main() {
 	if err := _main(); err != nil {
-		runtime.HandleExitPanic(err)
+		runtime.HandleExitError(err)
 
 		os.Stderr.WriteString(err.Error() + "\n")
 		os.Exit(1)

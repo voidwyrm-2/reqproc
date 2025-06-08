@@ -9,7 +9,7 @@ import (
 
 const REQPROC_VERSION = "3.2"
 
-func HandleExitPanic(e error) {
+func HandleExitError(e error) {
 	if e != nil {
 		if strings.HasPrefix(e.Error(), "EXIT CODE ") {
 			spl := strings.Split(e.Error(), " ")

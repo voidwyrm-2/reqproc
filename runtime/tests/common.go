@@ -13,6 +13,7 @@ import (
 type testCase[I, E any] struct {
 	input    I
 	expected []E
+	log      bool
 }
 
 type stackTestCase = testCase[string, struct {
@@ -34,7 +35,13 @@ func generateJunkString(length int) string {
 }
 
 func testStack(t *testing.T, cases []stackTestCase) {
-	for _, c := range cases {
+	for caseIndex, c := range cases {
+		if c.log {
+			t.Logf("(%d of %d) testing `%s`\n", caseIndex+1, len(cases), c.input)
+		} else {
+			t.Logf("testing %d of %d cases\n", caseIndex+1, len(cases))
+		}
+
 		i, err := interpreter.New(scope.New(nil, map[string]types.ReqType{}))
 		if err != nil {
 			t.Error(err.Error())
@@ -68,6 +75,12 @@ func testStack(t *testing.T, cases []stackTestCase) {
 			} else if !cond {
 				t.Errorf("expected value '%v' at position %d, but found '%v' instead (with `%s`)", e.v, i, r.Literal(), c.input)
 			}
+		}
+
+		if c.log {
+			t.Logf("(%d of %d) test output: `%s`\n", caseIndex+1, len(cases), i.GetStack())
+		} else {
+			t.Logf("tested %d of %d cases\n", caseIndex+1, len(cases))
 		}
 	}
 }

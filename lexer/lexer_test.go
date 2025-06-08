@@ -97,7 +97,9 @@ func TestLexer(t *testing.T) {
 		},
 	}
 
-	for _, c := range cases {
+	for caseIndex, c := range cases {
+		t.Logf("(%d of %d) testing `%s`\n", caseIndex+1, len(cases), c.input)
+
 		l := New(c.input)
 		if actual, err := l.Lex(); err != nil {
 			t.Fatal(err.Error())
@@ -112,6 +114,8 @@ func TestLexer(t *testing.T) {
 					t.Fatalf("expected (%s, '%s') but found (%s, '%s') instead with `%s`", e.kind.String(), e.lit, a.Kind().String(), a.Lit(), c.input)
 				}
 			}
+
+			t.Logf("(%d of %d) test output: `%s`", caseIndex+1, len(cases), actual)
 		}
 	}
 }

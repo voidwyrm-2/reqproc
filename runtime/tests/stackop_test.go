@@ -44,6 +44,7 @@ func TestAddition(t *testing.T) {
 		return stackTestCase{
 			strings.Join(operands, " "),
 			expected,
+			true,
 		}, nil
 	}); err != nil {
 		t.Fatal(err.Error())
@@ -74,6 +75,7 @@ func TestAddition(t *testing.T) {
 		return stackTestCase{
 			strings.Join(operands, " "),
 			expected,
+			true,
 		}, nil
 	}); err != nil {
 		t.Fatal(err.Error())
@@ -105,6 +107,7 @@ func TestAddition(t *testing.T) {
 		return stackTestCase{
 			strings.Join(operands, " "),
 			expected,
+			false,
 		}, nil
 	}); err != nil {
 		t.Fatal(err.Error())
@@ -141,6 +144,7 @@ func TestSubtraction(t *testing.T) {
 		return stackTestCase{
 			strings.Join(operands, " "),
 			expected,
+			true,
 		}, nil
 	}); err != nil {
 		t.Fatal(err.Error())
@@ -171,6 +175,7 @@ func TestSubtraction(t *testing.T) {
 		return stackTestCase{
 			strings.Join(operands, " "),
 			expected,
+			true,
 		}, nil
 	}); err != nil {
 		t.Fatal(err.Error())
@@ -207,6 +212,7 @@ func TestMultiplication(t *testing.T) {
 		return stackTestCase{
 			strings.Join(operands, " "),
 			expected,
+			true,
 		}, nil
 	}); err != nil {
 		t.Fatal(err.Error())
@@ -237,6 +243,7 @@ func TestMultiplication(t *testing.T) {
 		return stackTestCase{
 			strings.Join(operands, " "),
 			expected,
+			true,
 		}, nil
 	}); err != nil {
 		t.Fatal(err.Error())
@@ -274,6 +281,7 @@ func TestMultiplication(t *testing.T) {
 		return stackTestCase{
 			strings.Join(operands, " "),
 			expected,
+			false,
 		}, nil
 	}); err != nil {
 		t.Fatal(err.Error())
@@ -312,6 +320,7 @@ func TestDivision(t *testing.T) {
 		return stackTestCase{
 			strings.Join(operands, " "),
 			expected,
+			true,
 		}, nil
 	}); err != nil {
 		t.Fatal(err.Error())
@@ -342,6 +351,7 @@ func TestDivision(t *testing.T) {
 		return stackTestCase{
 			strings.Join(operands, " "),
 			expected,
+			true,
 		}, nil
 	}); err != nil {
 		t.Fatal(err.Error())

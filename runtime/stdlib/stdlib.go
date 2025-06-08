@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unsafe"
 
 	"github.com/voidwyrm-2/reqproc/runtime"
 	"github.com/voidwyrm-2/reqproc/runtime/scope"
@@ -15,6 +16,7 @@ import (
 	"github.com/voidwyrm-2/reqproc/runtime/types"
 	"github.com/voidwyrm-2/reqproc/runtime/types/functiontype"
 	"github.com/voidwyrm-2/reqproc/runtime/types/listtype"
+	"github.com/voidwyrm-2/reqproc/runtime/types/nativetype"
 	"github.com/voidwyrm-2/reqproc/runtime/types/numbertype"
 	"github.com/voidwyrm-2/reqproc/runtime/types/stringtype"
 	"github.com/voidwyrm-2/reqproc/runtime/types/tabletype"
@@ -298,5 +300,14 @@ var Stdlib = map[string]map[string]types.ReqType{
 
 			return nil
 		}, []types.ReqVarType{types.TypeString, types.TypeString}, []types.ReqVarType{types.TypeString}),
+	},
+	"ffi": {
+		"toNative": functiontype.NewSigNative(func(sc *scope.Scope, st *stack.Stack, callf func(rft functiontype.ReqFunctionType, sc *scope.Scope, st *stack.Stack) error) error {
+			val := st.Pop().Literal()
+
+			st.Push(nativetype.New(unsafe.Pointer(&val)))
+
+			return nil
+		}, 1.1),
 	},
 }

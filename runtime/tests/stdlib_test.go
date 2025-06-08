@@ -18,6 +18,7 @@ func TestUiuaFunctions(t *testing.T) {
 				{types.TypeNumber, float32(5)},
 				{types.TypeNumber, float32(2)},
 			},
+			true,
 		},
 		{
 			`4 10 @range dip`,
@@ -28,6 +29,7 @@ func TestUiuaFunctions(t *testing.T) {
 				{types.TypeList, []types.ReqType{numbertype.New(0), numbertype.New(1), numbertype.New(2), numbertype.New(3)}},
 				{types.TypeNumber, float32(10)},
 			},
+			true,
 		},
 		{
 			`5 range`,
@@ -37,6 +39,7 @@ func TestUiuaFunctions(t *testing.T) {
 			}{
 				{types.TypeList, []types.ReqType{numbertype.New(0), numbertype.New(1), numbertype.New(2), numbertype.New(3), numbertype.New(4)}},
 			},
+			true,
 		},
 		{
 			`10 range`,
@@ -46,6 +49,7 @@ func TestUiuaFunctions(t *testing.T) {
 			}{
 				{types.TypeList, []types.ReqType{numbertype.New(0), numbertype.New(1), numbertype.New(2), numbertype.New(3), numbertype.New(4), numbertype.New(5), numbertype.New(6), numbertype.New(7), numbertype.New(8), numbertype.New(9)}},
 			},
+			true,
 		},
 	}
 
@@ -62,6 +66,7 @@ func TestOsFs(t *testing.T) {
 			}{
 				{types.TypeTable, nil},
 			},
+			true,
 		},
 		{
 			`"os" import "." os.fs.items`,
@@ -71,6 +76,24 @@ func TestOsFs(t *testing.T) {
 			}{
 				{types.TypeList, nil},
 			},
+			true,
+		},
+	}
+
+	testStack(t, cases)
+}
+
+func TestFFI(t *testing.T) {
+	cases := []stackTestCase{
+		{
+			`"ffi" import 20 ffi.toNative`,
+			[]struct {
+				t types.ReqVarType
+				v any
+			}{
+				{types.TypeNative, nil},
+			},
+			true,
 		},
 	}
 

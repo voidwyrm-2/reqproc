@@ -1,12 +1,4 @@
-Changes for ReqProc 3.2:
-- Doc now prints the function's docstring instead of returning it
-- `runtime.version` now returns a string instead of a number
-- Removed the wildcard import in `runtime/types/basetype/basetype.go`
-- Tieded up the lexer and runtime tests and added indexing tests
-- Implemented the index get (`@#`) and index set (`!#`) operators
-- Implemented list declarations
-- Certain identifiers are now treated as separate symbols despite still being identifiers (e.g. `+++` -> `Ident('+'), Ident('+'), Ident('+')` and `cat++dog` -> `Ident('cat'), Ident('+'), Ident('+'), Ident('dog')`)
-- Renamed `runtime/test` to `runtime/tests`
-- Added the `range` keyword function
-- Fixed the terrible double-for-loop in `runtime/tests/common.go`
-- Added the `list-split` example
+Changes for ReqProc 3.4:
+- `runtime.HandleExitPanic` -> `runtime.HandleExitError`
+- Added new function `ffi.toNative(any)`
+- Added logs to all the tests
