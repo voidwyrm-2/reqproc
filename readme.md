@@ -1,3 +1,3 @@
 # ReqProc
 
-ReqProc is a stack-oriented concatenative scripting language written for web requesting and string processing
+ReqProc is a general-purpose stack-oriented concatenative scripting language written in Go, with inspiration from Lua
